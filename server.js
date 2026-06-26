@@ -140,6 +140,40 @@ app.get("/products", async (req, res) => {
   }
 });
 
+
+app.post("/products", async (req, res) => {
+  try {
+    const { name, category, price } = req.body;
+
+    if (!name || !category || price == null) {
+      return res.status(400).json({
+        message: "name, category and price are required"
+      });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO products
+      (name, category, price, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      RETURNING *;
+      `,
+      [name, category, price]
+    );
+
+    res.status(201).json({
+      message: "Product added successfully",
+      product: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
