@@ -174,6 +174,45 @@ app.post("/products", async (req, res) => {
   }
 });
 
+
+app.put("/products/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, category, price } = req.body;
+
+    const result = await pool.query(
+      `
+      UPDATE products
+      SET
+        name = COALESCE($1, name),
+        category = COALESCE($2, category),
+        price = COALESCE($3, price),
+        updated_at = NOW()
+      WHERE id = $4
+      RETURNING *;
+      `,
+      [name, category, price, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        message: "Product not found"
+      });
+    }
+
+    res.json({
+      message: "Product updated successfully",
+      product: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
